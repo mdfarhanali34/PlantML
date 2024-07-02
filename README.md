@@ -1,4 +1,4 @@
-Plant Severity Detection
+🌿 Plant Severity Detection
 
 Plant Severity Detection is an application that uses deep learning models for object detection and segmentation to analyze images of plants and calculate the severity of certain conditions based on color ratios in plant images.
 Features
