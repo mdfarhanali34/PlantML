@@ -1,31 +1,53 @@
-import React from 'react'
-import { Text, View } from 'react-native';
-import { CameraScreen } from 'react-native-camera-kit';
+import React, { useState } from 'react';
+import { Button, Image, Text, View } from 'react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
 
+const HomeScreen = () => {
+  const [photo, setPhoto] = useState(null);
 
+  const selectImage = async () => {
+    try {
+      launchImageLibrary(
+        {
+         mediaType: 'photo',
+         includeBase64: false,
+         maxHeight: 200,
+         maxWidth: 200,
+        },
+         response => {
+            console.log(response);
+            setPhoto(response);
+           },
+         );
+      // const result = await launchImageLibrary({
+      //   mediaType: 'photo',
+      //   includeBase64: false,
+      //   maxHeight: 200,
+      //   maxWidth: 200,
+      // });
 
-const Home = () => {
+      // if (result.didCancel) {
+      //   console.log('User cancelled image picker');
+      // } else if (result.errorCode) {
+      //   console.log('ImagePicker Error: ', result.errorMessage);
+      // } else {
+      //   const source = { uri: result.assets[0].uri };
+      //   setSelectedImage(source);
+      // }
+    } catch (error) {
+      console.log('Error picking image: ', error);
+    }
+  };
 
   return (
-    <View>
-      <CameraScreen
-        actions={{ rightButtonText: 'Done', leftButtonText: 'Cancel' }}
-        onBottomButtonPressed={(event) => this.onBottomButtonPressed(event)}
-        // flashImages={{
-        //   // optional, images for flash state
-        //   on: require('path/to/image'),
-        //   off: require('path/to/image'),
-        //   auto: require('path/to/image'),
-        // }}
-        // cameraFlipImage={require('path/to/image')} // optional, image for flipping camera button
-        // captureButtonImage={require('path/to/image')} // optional, image capture button
-        // torchOnImage={require('path/to/image')} // optional, image for toggling on flash light
-        // torchOffImage={require('path/to/image')} // optional, image for toggling off flash light
-        hideControls={false} // (default false) optional, hides camera controls
-        showCapturedImageCount={false} // (default false) optional, show count for photos taken during that capture session
-      />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Home Screen</Text>
+      <Button title="Select Image from Gallery" onPress={selectImage} />
+      {/* {selectedImage && (
+        <Image source={selectedImage} style={{ width: 200, height: 200, marginTop: 20 }} />
+      )} */}
     </View>
-  )
-}
+  );
+};
 
-export default Home
+export default HomeScreen;
