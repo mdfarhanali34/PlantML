@@ -5,8 +5,12 @@ import torch
 from ultralytics import YOLO
 from mobile_sam import sam_model_registry, SamPredictor
 import matplotlib.pyplot as plt
+import traceback
+from quart_cors import cors
+import os  # Make sure to import the os module
 
 app = Quart(__name__)
+app = cors(app, allow_origin="*")  # Allow all origins for simplicity
 
 # Load YOLO model
 model = YOLO("/home/mohammadfarhanali/Downloads/plantML/backend/YOLOv8x_wheat_head_detection.onnx")
@@ -15,8 +19,8 @@ model = YOLO("/home/mohammadfarhanali/Downloads/plantML/backend/YOLOv8x_wheat_he
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Load MobileSAM 
-model_type = "vit_h"
-sam_checkpoint = "/home/mohammadfarhanali/Downloads/plantML/backend/sam_vit_h_4b8939.pth"
+model_type = "vit_t"
+sam_checkpoint = "/home/mohammadfarhanali/Downloads/plantML/backend/mobile_sam.pt"
 mobile_sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
 mobile_sam.to(device=device)
 mobile_sam.eval()
@@ -41,6 +45,9 @@ async def calculate_severity(image_path):
     img_arr = cv2.imread(image_path)
     img_arr = cv2.cvtColor(img_arr, cv2.COLOR_BGR2RGB)
    
+    height, width, channels = img_arr.shape
+    print(f'Image dimensions: {height} x {width} x {channels}')
+
     print('All boxes array:', all_boxes)
     # Set the image for the predictor
     predictor.set_image(img_arr)
@@ -78,6 +85,7 @@ async def calculate_severity(image_path):
 
             # Avoid division by zero
             s_rg_sum = s_g + s_r
+            s_rg_sum = s_rg_sum.astype(float)  # Convert to float array
             s_rg_sum[s_rg_sum == 0] = np.nan
 
             # Performing the red/green ratio calculation
@@ -104,6 +112,7 @@ async def calculate_severity(image_path):
 
         except Exception as e:
             print(f"Error processing box {input_box}: {e}")
+            print(traceback.format_exc())
 
     # Calculate the average percentage of pixels with R/G ratio above the threshold for all detections
     average_percentage = sum(percentages) / len(percentages) if percentages else 0
@@ -112,19 +121,22 @@ async def calculate_severity(image_path):
 
 @app.route('/calculate_severity', methods=['POST'])
 async def calculate_severity_endpoint():
-    files = await request.files  # Await request.files
+    form = await request.form
+    files = await request.files
+
     if 'image' not in files:
         return jsonify({"error": "No image file provided"}), 400
-    
-    image_file = files['image']
+
+    image = files['image']
     image_path = "temp_image.jpg"
-    await image_file.save(image_path)
+    await image.save(image_path)
     
     try:
         average_percentage = await calculate_severity(image_path)
+        os.remove(image_path)  # Clean up the saved imag
         return jsonify({"average_percentage": average_percentage})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)
